@@ -204,6 +204,7 @@ extern "C" {
 		
 			for (int i = 1; i < HASHX11K_NUMBER_ITERATIONS; i++)
 			{
+				cudaDeviceSynchronize();
 				seed_index = (unsigned char *) d_hash[thr_id];
 
 				switch (seed_index[i] % HASHX11K_NUMBER_ALGOS)

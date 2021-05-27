@@ -1,0 +1,140 @@
+Building CCMiner on Windows 7
+
+
+1. Install Visual Studio. 
+	It appears most of the dependancies have project setups for v12 or lower, but this was done using 13.
+
+
+
+2. Install Perl
+	http://www.activestate.com/activeperl/downloads
+
+
+	
+3. Download and install the CUDA development tools. 
+	https://developer.nvidia.com/cuda-downloads-geforce-gtx9xx
+
+	Note: cuda tools version 7.0 is available, but the ccminer project seems to need 6.5, also be sure you have the version of the tools that will work for gtx 900 series cards.
+
+	Simply run the installer, it will install itself into Visual Studio.
+
+
+4. Gather and Build Dependencies
+
+	CCMiner requires the following dependencies. They must be compiled and the visual studio project settings must properly point to them.
+
+	Download cUrl/libcurl:
+		Note: 7.41.0 does NOT work with the ccminer project. It also fails to compile correctly using the included VS12 project file.
+	Download curl from:
+	http://curl.haxx.se/download/
+	I used curl-7.40.0.zip.
+	Extract the zip to where ever your source is kept. It's not required, but makes sense to keep the curl folder adjacent to the ccminer folder.
+	Navigate to curl-7.40.0\projects\Windows\VC12
+	Open curl.sln  (accept any warnings or upgrades that visual studio throws out)
+	At the top of Visual Studio set the build to be Lib Release Lib OpenSSL for Win32
+	Don't bother building it yet. We need open ssl now.
+
+
+	Download and Build OpenSSL for Windows:
+	Download the source from ftp://ftp.openssl.org/source/
+		Note: I used version 0.9.8zf, You'll need a way to extract tar files on Windows.
+	Extract openssl source somewhere (I recommend adjacent to ccminer project)
+	Open the Visual Studio 32 bit command prompt (Start->All Programs->Visual Studio 2013->Visual Studio Tools->VS2013 x86 Native Tools Command Prompt)
+	In the command prompt navigate to where you extracted the openssl source.
+	Use the following to build:		perl Configure VC-WIN32 --prefix=<path to curl source folder>		ms\do_ms 		nmake -f ms\nt.mak 		nmake -f ms\nt.mak install
+	Note: Setting the --prefix to the curl folder will let the existing VS Solution setup just build, but it does copy the built ssl files into the curl sources folder. If you want to keep things cleaner you can change prefix, then edit the curl Visual Studio project properties to include the openssl include folder, and under linker also include the openssl lib folder.
+
+	Now go back to the curl project and Build Solution.
+
+
+
+	Download and Build mpir:
+	Download the mpir source from http://mpir.org/#release
+	I used mpir version 2.6.0.
+		Note: you'll need a way to extract the .bz2 tarball on windows.	
+	Extract the source somewhere.
+	Navigate to mpir-2.6.0\build.vc10
+	Open the Visual Studio project mpir.sln
+	This project solution contains builds for different versions of mpir.
+	At the top of Visual Studio change the build to Release Win32
+	Right-click lib_mpir_gc and select build. (I'm not sure what, if any, others need to be built)
+	This should put library files in mpir-2.6.0\build.vc10\Win32\Release
+	
+
+	Download and Setup pthreads:
+
+	Download pthreads from http://sourceware.org/pthreads-win32/
+	Select the first choice to get source and precompiled libs.
+	Download the most recent version for w32. I used pthreads-w32-2-9-1-release.zip
+	Extract the contents to wherever the rest of the dependencies are kept.
+
+
+
+5. Setup the Visual Studio project for CCMiner
+
+	Open the file ccminer.sln (mine didn't want to open, I had to go to file->open project in visual studio).
+	Right click the ccminer project (not solution) and select properties.
+	Go to C/C++ and edit "Additional Include Directories"
+		Make sure everything in compat is included, as well as all the include directories of the dependencies you just gathered. For example: compat\jansson  and ..\curl-7.40.0\include
+	Still in project properties...
+	Expand Linker.
+		Select General.
+		Make sure any folder with a .lib you created is listed here (including ssl libs which may be in curl\lib).
+			eg ..\mpir-2.6.0\build.vc10\Win32\Release
+
+		Select Input.
+			Select "Additional Dependencies"
+			Make sure any .lib files created are listed here and any cuda libs needed are listed here.
+			Also make sure there is nothing list here that doesn't belong (eg I had to remove an ssleay32MT.lib that a previous project setting added).
+			Mine contained:
+				mpir.lib
+mpirxx.lib
+cudart.lib
+cuda.lib
+kernel32.lib
+user32.lib
+gdi32.lib
+winspool.lib
+comdlg32.lib
+advapi32.lib
+shell32.lib
+ole32.lib
+oleaut32.lib
+uuid.lib
+odbc32.lib
+odbccp32.lib
+pthreadVC2.lib
+libcurl.lib
+ws2_32.lib
+Wldap32.lib
+libeay32.lib
+ssleay32.lib
+
+
+	Select CUDA Linker.
+		Set "Generate GPU Debug Information" to No
+
+	Select C/C++. Select Code Generation.
+		Set "Runtime Library" to Multi-threaded DLL (/MD)
+		Note: I believe the above option should be there and I just have a library compiled incorrectly. All libraries need to be compiled as /MT for the project to be /MT.
+
+	Select CUDA C/C++. Select Device.
+		Make sure "Code Generation" includes support for compute 3.0 (compute_30,sm_30)
+
+
+
+6. Build It
+	At the top of the Visual Studio window change the build to Release Win32.
+	Select Build->Build Solution
+	Cross your fingers and wait an hour.
+
+
+			
+
+
+
+
+
+
+
+
